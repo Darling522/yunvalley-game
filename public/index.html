@@ -814,10 +814,13 @@
 
     <!-- 房间信息 -->
     <div class="room-info">
-      <span>房间号：</span>
-      <span class="room-code" id="display-roomid"></span>
-      <button class="copy-btn" onclick="copyRoomId()" title="复制房间号">📋</button>
-      <button class="btn btn-sm btn-danger" onclick="leaveGame()">退出</button>
+      <span>房间码：</span>
+      <span class="room-code" id="display-roomid" style="font-size:1.3rem;letter-spacing:3px"></span>
+      <button class="copy-btn" onclick="copyRoomId()" title="复制房间码">📋</button>
+    </div>
+    <div class="room-info">
+      <button class="btn btn-secondary btn-sm" onclick="copyInviteLink()">🔗 复制邀请链接</button>
+      <button class="btn btn-sm btn-danger" onclick="leaveGame()" style="margin-left:auto">退出</button>
     </div>
 
     <!-- 阶段指示器 -->
@@ -901,6 +904,7 @@ let myLeafCount = 0;
 let mySmokeCount = 0;
 let allPlayers = [];
 let roomId = '';
+let shortCode = '';
 
 // ============ Socket 连接 ============
 function connectSocket() {
@@ -986,8 +990,9 @@ function updateRoom(room) {
   turnQueue = room.turnQueue || [];
   allPlayers = room.players || [];
   roomId = room.id;
+  shortCode = room.shortCode || '';
 
-  document.getElementById('display-roomid').textContent = room.id;
+  document.getElementById('display-roomid').textContent = shortCode || room.id;
 
   // 事件卡
   if (room.eventCard) {
@@ -1230,6 +1235,7 @@ function createRoom() {
     if (!res.success) { showToast('创建失败'); return; }
     isHost = true;
     roomId = res.roomId;
+    shortCode = res.shortCode || '';
     availablePieces = res.pieces;
     showJoinPhase(res.room);
     showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true));
@@ -1335,7 +1341,27 @@ function playAgain() {
 }
 
 function copyRoomId() {
-  navigator.clipboard.writeText(roomId).then(() => showToast('房间号已复制！'));
+  navigator.clipboard.writeText(shortCode || roomId).then(() => showToast('房间码已复制！'));
+}
+
+function copyInviteLink() {
+  const link = window.location.origin + '?room=' + (shortCode || roomId);
+  navigator.clipboard.writeText(link).then(() => showToast('邀请链接已复制！发给别人直接加入！'));
+}
+
+// ============ URL邀请链接自动加入 ============
+function checkUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const roomParam = params.get('room');
+  if (roomParam) {
+    document.getElementById('join-roomid').value = roomParam;
+    // 自动聚焦到名字输入框，并显示提示
+    const nameInput = document.getElementById('join-name');
+    nameInput.placeholder = '有人邀请你加入！输入名字后点加入';
+    nameInput.focus();
+    // 滚动到加入房间区域
+    document.getElementById('join-roomid').closest('.card').scrollIntoView({ behavior: 'smooth' });
+  }
 }
 
 // ============ 模态框 ============
@@ -1384,6 +1410,9 @@ function initClouds() {
 // ============ 初始化 ============
 // 自动连接
 connectSocket();
+
+// 检查URL中的房间参数（支持邀请链接直接加入）
+checkUrlParams();
 
 // 拦截 Socket 事件来更新 UI
 const originalOn = socket.on.bind(socket);

@@ -61,10 +61,22 @@ const PIECES = [
 
 // ============ 游戏状态 ============
 const rooms = new Map();
+const shortCodeToRoomId = new Map();
 
-function createRoom(roomId) {
+// 生成6位短房间码
+function generateShortCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+function createRoom(roomId, shortCode) {
   return {
     id: roomId,
+    shortCode: shortCode,
     players: [], // { socketId, name, piece, smoke, leaf, selectedCard, choices: [], order }
     host: null,
     phase: 0, // 0-4 对应5个阶段
@@ -83,6 +95,7 @@ function createRoom(roomId) {
 function getRoomState(room) {
   return {
     id: room.id,
+    shortCode: room.shortCode,
     phase: room.phase,
     phaseName: PHASES[room.phase],
     phaseState: room.phaseState,
@@ -114,8 +127,15 @@ io.on('connection', (socket) => {
 
   // 创建房间
   socket.on('createRoom', (userName, callback) => {
-    const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const room = createRoom(roomId);
+    // 生成唯一短码
+    let shortCode;
+    do {
+      shortCode = generateShortCode();
+    } while (shortCodeToRoomId.has(shortCode));
+    
+    const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+    const room = createRoom(roomId, shortCode);
+    shortCodeToRoomId.set(shortCode, roomId);
     const piece = PIECES[0];
     
     room.host = socket.id;
@@ -135,11 +155,17 @@ io.on('connection', (socket) => {
     currentRoom = roomId;
     socket.join(roomId);
     
-    callback({ success: true, roomId, room: getRoomState(room), pieces: PIECES, allPieces: PIECES });
+    callback({ success: true, roomId, shortCode, room: getRoomState(room), pieces: PIECES, allPieces: PIECES });
   });
 
-  // 加入房间
-  socket.on('joinRoom', (roomId, userName, callback) => {
+  // 加入房间（支持短码）
+  socket.on('joinRoom', (roomIdOrCode, userName, callback) => {
+    // 如果是短码，转为完整房间ID
+    let roomId = roomIdOrCode;
+    if (!rooms.has(roomIdOrCode) && shortCodeToRoomId.has(roomIdOrCode.toUpperCase())) {
+      roomId = shortCodeToRoomId.get(roomIdOrCode.toUpperCase());
+    }
+    
     const room = rooms.get(roomId);
     if (!room) {
       callback({ success: false, error: '房间不存在' });
