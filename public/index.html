@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🌤️ 拯救云谷小镇 - 联机桌游</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☁️</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --sky: #87CEEB;
+      --cloud: #fff;
+      --sun: #FFE066;
+      --grass: #7BC67B;
+      --smoke: #555;
+      --leaf: #4CAF50;
+      --coal: #444;
+      --gas: #888;
+      --wind: #87CEEB;
+      --solar: #FFB300;
+      --pink: #FF9EC4;
+      --red: #FF6B6B;
+      --blue: #74C0FC;
+      --yellow: #FFE066;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(180deg, #87CEEB 0%, #c8e6f5 40%, #90EE90 100%);
+      min-height: 100vh;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    /* 背景动画云朵 */
+    .clouds {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 200px;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .cloud {
+      position: absolute;
+      background: rgba(255,255,255,0.8);
+      border-radius: 50%;
+      animation: floatCloud linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+    @keyframes floatCloud {
+      from { transform: translateX(-200px); }
+      to { transform: translateX(calc(100vw + 200px)); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 12px;
+      min-height: 100vh;
+    }
+
+    /* 顶部标题 */
+    .header {
+      text-align: center;
+      padding: 16px 0 12px;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      color: #2c5aa0;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .header .subtitle {
+      font-size: 0.85rem;
+      color: #5a8ac6;
+      margin-top: 4px;
+    }
+
+    /* 卡片通用样式 */
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      border: 2px solid rgba(255,255,255,0.8);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #2c5aa0;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ========== 封面页 ========== */
+    #page-lobby { display: block; }
+    #page-game { display: none; }
+
+    .lobby-intro {
+      text-align: center;
+      padding: 16px;
+    }
+    .lobby-intro .mascot {
+      font-size: 4rem;
+      margin-bottom: 8px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .lobby-intro h2 {
+      font-size: 1.3rem;
+      color: #2c5aa0;
+      margin-bottom: 8px;
+    }
+    .lobby-intro p {
+      font-size: 0.85rem;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #4CAF50, #66BB6A);
+      color: white;
+      box-shadow: 0 4px 12px rgba(76,175,80,0.4);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #66BB6A, #81C784); }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #42A5F5, #64B5F6);
+      color: white;
+      box-shadow: 0 4px 12px rgba(66,165,245,0.4);
+    }
+    
+    .btn-outline {
+      background: white;
+      color: #42A5F5;
+      border: 2px solid #42A5F5;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ef5350, #e57373);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      min-height: 36px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    /* 输入框 */
+    .input-group {
+      margin-bottom: 12px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      background: white;
+    }
+    .input-group input:focus {
+      outline: none;
+      border-color: #42A5F5;
+    }
+
+    /* 房间信息 */
+    .room-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .room-code {
+      background: #e3f2fd;
+      color: #1565C0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px;
+    }
+
+    /* 角色选择 */
+    .piece-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .piece-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 8px;
+      border: 3px solid #ddd;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+    }
+    .piece-item:hover { border-color: #42A5F5; }
+    .piece-item.selected {
+      border-color: #4CAF50;
+      background: #e8f5e9;
+    }
+    .piece-item.taken {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .piece-item .emoji {
+      font-size: 2.5rem;
+      margin-bottom: 4px;
+    }
+    .piece-item .name {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* 玩家列表 */
+    .player-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .player-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border: 2px solid;
+    }
+    .player-badge .emoji { font-size: 1.2rem; }
+    .player-badge.host::after {
+      content: '👑';
+      font-size: 0.8rem;
+    }
+
+    /* ========== 游戏页 ========== */
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .phase-indicator {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .phase-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border: 2px solid #ddd;
+      background: #f5f5f5;
+      color: #999;
+      transition: all 0.3s;
+    }
+    .phase-dot.active {
+      background: #42A5F5;
+      border-color: #42A5F5;
+      color: white;
+      transform: scale(1.2);
+    }
+    .phase-dot.done {
+      background: #4CAF50;
+      border-color: #4CAF50;
+      color: white;
+    }
+
+    .event-banner {
+      background: linear-gradient(135deg, #FF9800, #FFB74D);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(255,152,0,0.3);
+    }
+
+    /* 回合提示 */
+    .turn-banner {
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+    .turn-banner.my-turn {
+      background: #e8f5e9;
+      border: 2px solid #4CAF50;
+      color: #2e7d32;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .turn-banner.waiting {
+      background: #fff3e0;
+      border: 2px solid #FF9800;
+      color: #e65100;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(76,175,80,0); }
+    }
+
+    /* 选择卡区域 */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .game-card {
+      background: white;
+      border-radius: 14px;
+      padding: 12px 10px;
+      border: 3px solid #e0e0e0;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .game-card:hover:not(.taken):not(.disabled) {
+      border-color: #42A5F5;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    .game-card.taken {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #ccc;
+    }
+    .game-card.taken::after {
+      content: attr(data-taken-by);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-15deg);
+      background: #ef5350;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .game-card.selected-card {
+      border-color: #4CAF50;
+      background: #e8f5e9;
+      cursor: default;
+    }
+    .game-card .card-name {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 2px;
+    }
+    .game-card .card-desc {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .game-card .card-tokens {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .token {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .token-smoke {
+      background: #37474f;
+      color: white;
+    }
+    .token-leaf {
+      background: #4CAF50;
+      color: white;
+    }
+    .game-card .card-tip {
+      font-size: 0.7rem;
+      color: #888;
+      margin-top: 6px;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* 玩家状态面板 */
+    .players-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .player-panel {
+      background: white;
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      border: 3px solid;
+      position: relative;
+    }
+    .player-panel .piece-icon {
+      font-size: 2rem;
+      margin-bottom: 4px;
+    }
+    .player-panel .player-name {
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .player-panel .tokens-display {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .player-panel .token-count {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    .player-panel .final-score {
+      font-size: 0.75rem;
+      color: #666;
+    }
+    .player-panel .choices-summary {
+      font-size: 0.7rem;
+      color: #999;
+      margin-top: 4px;
+    }
+    .player-panel.me {
+      box-shadow: 0 0 0 3px rgba(66,165,245,0.5);
+    }
+
+    /* 绿叶清洗区 */
+    .clean-section {
+      background: #e8f5e9;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 2px solid #81C784;
+    }
+    .clean-section h4 {
+      font-size: 0.9rem;
+      color: #2e7d32;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .clean-info {
+      font-size: 0.85rem;
+      color: #558b2f;
+      margin-bottom: 10px;
+    }
+    .clean-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .clean-row label {
+      font-size: 0.85rem;
+      color: #333;
+      min-width: 60px;
+    }
+    .clean-row select, .clean-row input {
+      padding: 6px 10px;
+      border: 2px solid #81C784;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      background: white;
+    }
+    .clean-row button {
+      padding: 6px 14px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .clean-row button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* 结果页 */
+    .result-card {
+      text-align: center;
+    }
+    .result-card .result-emoji {
+      font-size: 5rem;
+      margin-bottom: 12px;
+    }
+    .result-card h2 {
+      font-size: 1.5rem;
+      color: #2c5aa0;
+      margin-bottom: 8px;
+    }
+    .result-card .total-smoke {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #e53935;
+      margin: 12px 0;
+    }
+    .result-card .verdict {
+      font-size: 1.1rem;
+      padding: 10px 20px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    .verdict-perfect { background: #e8f5e9; color: #2e7d32; border: 2px solid #4CAF50; }
+    .verdict-success { background: #fff3e0; color: #e65100; border: 2px solid #FF9800; }
+    .verdict-fail { background: #ffebee; color: #c62828; border: 2px solid #ef5350; }
+
+    .ranking-list {
+      list-style: none;
+      max-width: 400px;
+      margin: 16px auto;
+    }
+    .ranking-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: white;
+      font-size: 0.9rem;
+    }
+    .ranking-list li .rank {
+      font-size: 1.2rem;
+      font-weight: bold;
+      min-width: 30px;
+    }
+    .ranking-list li .piece { font-size: 1.3rem; }
+    .ranking-list li .name { flex: 1; font-weight: bold; }
+    .ranking-list li .score { font-weight: bold; }
+    .ranking-list li:first-child {
+      background: #fff8e1;
+      border: 2px solid #FFB300;
+    }
+    .ranking-list li .score.green { color: #4CAF50; }
+    .ranking-list li .score.red { color: #e53935; }
+
+    /* 提示消息 */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      z-index: 1000;
+      animation: toastIn 0.3s ease;
+      pointer-events: none;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* 等待动画 */
+    .waiting-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0% { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+    }
+
+    /* 讨论区 */
+    .discussion {
+      background: #fffde7;
+      border-radius: 14px;
+      padding: 14px;
+      border: 2px solid #FFD54F;
+    }
+    .discussion h4 {
+      color: #f57f17;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .discussion ul {
+      padding-left: 20px;
+      font-size: 0.85rem;
+      color: #555;
+      line-height: 1.8;
+    }
+
+    /* 模态框 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .modal h3 {
+      font-size: 1.2rem;
+      color: #2c5aa0;
+      margin-bottom: 12px;
+    }
+    .modal p {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    /* 响应式 */
+    @media (min-width: 600px) {
+      .cards-grid { grid-template-columns: repeat(4, 1fr); }
+      .piece-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* 加载动画 */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px;
+      color: #666;
+    }
+    .loading span {
+      width: 10px; height: 10px;
+      background: #42A5F5;
+      border-radius: 50%;
+      animation: loadBounce 1.4s ease-in-out infinite;
+    }
+    .loading span:nth-child(2) { animation-delay: 0.2s; }
+    .loading span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes loadBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 底部安全区 */
+    .bottom-bar {
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景云朵 -->
+<div class="clouds" id="clouds"></div>
+
+<div class="container">
+  <!-- ========== 封面页 ========== -->
+  <div id="page-lobby">
+    <div class="header">
+      <h1>🌤️ 拯救云谷小镇</h1>
+      <p class="subtitle">8-12岁小朋友的环保桌游 · 联机版</p>
+    </div>
+
+    <div class="card lobby-intro">
+      <div class="mascot">🏭→🌳</div>
+      <h2>一起帮小产品走完环保之旅！</h2>
+      <p>5个阶段、20张选择卡、4个小伙伴<br>团队合作，把小镇的黑烟都洗掉！</p>
+    </div>
+
+    <!-- 创建房间 -->
+    <div class="card">
+      <div class="card-title">🎮 创建新房间</div>
+      <div class="input-group">
+        <label>你的名字</label>
+        <input type="text" id="create-name" placeholder="输入名字" maxlength="10">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="createRoom()">
+        ✨ 创建房间
+      </button>
+    </div>
+
+    <!-- 加入房间 -->
+    <div class="card">
+      <div class="card-title">🚪 加入房间</div>
+      <div class="input-group">
+        <label>房间号</label>
+        <input type="text" id="join-roomid" placeholder="输入房间号" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label>你的名字</label>
+        <input type="text" id="join-name" placeholder="输入名字" maxlength="10">
+      </div>
+      <button class="btn btn-secondary" style="width:100%" onclick="joinRoom()">
+        🚀 加入游戏
+      </button>
+    </div>
+
+    <!-- 游戏说明 -->
+    <div class="card">
+      <div class="card-title">📖 怎么玩？</div>
+      <ul style="padding-left:20px;font-size:0.85rem;line-height:2;color:#555;">
+        <li>🏭 每个产品要走<strong>5个阶段</strong>：原材料→制造→运输→使用→废弃</li>
+        <li>🃏 每个阶段选1张<strong>环保卡</strong>，污染越少小镇越干净！</li>
+        <li>🍃 用绿叶币可以<strong>帮朋友洗黑烟</strong>，团队合作最重要！</li>
+        <li>🏆 所有人总污染 ≤30，小镇就得救啦！</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ========== 游戏页 ========== -->
+  <div id="page-game">
+    <div class="header">
+      <h1>🌤️ 拯救云谷小镇</h1>
+    </div>
+
+    <!-- 房间信息 -->
+    <div class="room-info">
+      <span>房间号：</span>
+      <span class="room-code" id="display-roomid"></span>
+      <button class="copy-btn" onclick="copyRoomId()" title="复制房间号">📋</button>
+      <button class="btn btn-sm btn-danger" onclick="leaveGame()">退出</button>
+    </div>
+
+    <!-- 阶段指示器 -->
+    <div class="card">
+      <div class="phase-indicator" id="phase-indicator">
+        <div class="phase-dot active" data-phase="0">原</div>
+        <div class="phase-dot" data-phase="1">制</div>
+        <div class="phase-dot" data-phase="2">运</div>
+        <div class="phase-dot" data-phase="3">使</div>
+        <div class="phase-dot" data-phase="4">废</div>
+      </div>
+    </div>
+
+    <!-- 事件卡 -->
+    <div class="event-banner" id="event-banner" style="display:none">
+      🎁 随机事件：<span id="event-name"></span>
+      <div id="event-desc" style="font-size:0.8rem;margin-top:4px"></div>
+    </div>
+
+    <!-- 回合提示 -->
+    <div class="turn-banner" id="turn-banner" style="display:none">
+      <span id="turn-text"></span>
+    </div>
+
+    <!-- 玩家状态面板 -->
+    <div class="players-panel" id="players-panel"></div>
+
+    <!-- 选择卡区域 -->
+    <div class="card" id="cards-section">
+      <div class="card-title">🎴 选择卡片</div>
+      <div class="cards-grid" id="cards-grid"></div>
+    </div>
+
+    <!-- 绿叶清洗区 -->
+    <div class="clean-section" id="clean-section" style="display:none">
+      <h4>🍃 绿叶清洗区</h4>
+      <div class="clean-info" id="clean-info"></div>
+      <div class="clean-row" id="clean-row"></div>
+    </div>
+
+    <!-- 等待/操作按钮 -->
+    <div id="action-area" style="text-align:center;margin:12px 0"></div>
+
+    <!-- 结果区 -->
+    <div id="result-section" style="display:none"></div>
+
+    <!-- 讨论区 -->
+    <div class="discussion" id="discussion-section" style="display:none">
+      <h4>💬 游戏后讨论</h4>
+      <ul id="discussion-list"></ul>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p id="modal-text"></p>
+    <div id="modal-actions"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ============ 全局状态 ============
+let socket = null;
+let mySocketId = null;
+let currentRoom = null;
+let myPlayerName = '';
+let isHost = false;
+let currentPhase = 0;
+let phaseState = '';
+let currentTurnIndex = 0;
+let turnQueue = [];
+let selectedPieceId = null;
+let availablePieces = [];
+let myLeafCount = 0;
+let mySmokeCount = 0;
+let allPlayers = [];
+let roomId = '';
+
+// ============ Socket 连接 ============
+function connectSocket() {
+  socket = io();
+
+  socket.on('connect', () => {
+    mySocketId = socket.id;
+    console.log('已连接:', mySocketId);
+  });
+
+  socket.on('disconnect', () => {
+    showToast('连接断开，正在重连...');
+  });
+
+  socket.on('playerJoined', (room) => {
+    updateRoom(room);
+    showToast(`欢迎 ${room.players[room.players.length-1]?.name} 加入！`);
+  });
+
+  socket.on('playerLeft', (data) => {
+    updateRoom(data.room);
+    showToast('一个玩家离开了');
+  });
+
+  socket.on('roomUpdated', (room) => {
+    updateRoom(room);
+  });
+
+  socket.on('gameStarted', (room) => {
+    showGamePage();
+    updateRoom(room);
+    showToast('🎮 游戏开始！');
+  });
+
+  socket.on('phaseStarted', (room) => {
+    currentPhase = room.phase;
+    phaseState = room.phaseState;
+    currentTurnIndex = room.turnIndex;
+    updateRoom(room);
+    renderGameUI();
+  });
+
+  socket.on('cardSelected', (data) => {
+    updateRoom(data.room);
+    renderGameUI();
+    showToast(`${data.playerName} 选了卡`);
+  });
+
+  socket.on('allSelected', (room) => {
+    phaseState = 'revealing';
+    updateRoom(room);
+    renderGameUI();
+    showToast('所有人选完了！');
+  });
+
+  socket.on('leafUsed', (data) => {
+    updateRoom(data.room);
+    renderGameUI();
+    showToast(`${data.from} 用 ${data.count} 片绿叶帮了 ${data.target}！`);
+  });
+
+  socket.on('gameFinished', (result) => {
+    showResult(result);
+  });
+}
+
+// ============ UI 更新 ============
+function showPage(page) {
+  document.getElementById('page-lobby').style.display = page === 'lobby' ? 'block' : 'none';
+  document.getElementById('page-game').style.display = page === 'game' ? 'block' : 'none';
+}
+
+function showGamePage() {
+  showPage('game');
+  initClouds();
+}
+
+function updateRoom(room) {
+  currentRoom = room;
+  currentPhase = room.phase;
+  phaseState = room.phaseState;
+  currentTurnIndex = room.turnIndex;
+  turnQueue = room.turnQueue || [];
+  allPlayers = room.players || [];
+  roomId = room.id;
+
+  document.getElementById('display-roomid').textContent = room.id;
+
+  // 事件卡
+  if (room.eventCard) {
+    document.getElementById('event-banner').style.display = 'block';
+    document.getElementById('event-name').textContent = room.eventCard.name;
+    document.getElementById('event-desc').textContent = room.eventCard.desc;
+  }
+
+  // 阶段指示器
+  document.querySelectorAll('.phase-dot').forEach((dot, i) => {
+    dot.classList.remove('active', 'done');
+    if (i < room.phase) dot.classList.add('done');
+    else if (i === room.phase) dot.classList.add('active');
+  });
+
+  // 玩家数据
+  allPlayers.forEach(p => {
+    if (p.socketId === mySocketId) {
+      myPlayerName = p.name;
+      myLeafCount = p.leaf;
+      mySmokeCount = p.smoke;
+      selectedPieceId = p.piece?.id;
+    }
+  });
+}
+
+function renderGameUI() {
+  const me = allPlayers.find(p => p.socketId === mySocketId);
+  if (!me) return;
+
+  // 回合提示
+  const turnBanner = document.getElementById('turn-banner');
+  if (phaseState === 'selecting') {
+    const currentPlayerIndex = turnQueue[currentTurnIndex];
+    const currentPlayer = allPlayers[currentPlayerIndex];
+    if (currentPlayer && currentPlayer.socketId === mySocketId) {
+      turnBanner.style.display = 'block';
+      turnBanner.className = 'turn-banner my-turn';
+      document.getElementById('turn-text').textContent = '⏰ 轮到你了！请选择一张卡！';
+    } else {
+      turnBanner.style.display = 'block';
+      turnBanner.className = 'turn-banner waiting';
+      document.getElementById('turn-text').textContent = `等待 ${currentPlayer?.name || '...'} 选卡中...`;
+    }
+  } else {
+    turnBanner.style.display = 'none';
+  }
+
+  // 玩家面板
+  renderPlayersPanel();
+
+  // 卡片区
+  renderCards();
+
+  // 清洗区
+  renderCleanSection();
+
+  // 操作按钮
+  renderActionArea();
+}
+
+function renderPlayersPanel() {
+  const panel = document.getElementById('players-panel');
+  panel.innerHTML = allPlayers.map(p => {
+    const finalScore = p.smoke - p.leaf;
+    const choicesStr = p.choices.map(c => c.card.name).join(' → ');
+    return `
+      <div class="player-panel ${p.socketId === mySocketId ? 'me' : ''}" style="border-color:${p.piece?.color || '#ccc'}">
+        <div class="piece-icon">${getPieceEmoji(p.piece?.id)}</div>
+        <div class="player-name">${p.name}</div>
+        <div class="tokens-display">
+          <span class="token-count" title="黑烟币">🌫️ ${p.smoke}</span>
+          <span class="token-count" title="绿叶币">🍃 ${p.leaf}</span>
+        </div>
+        <div class="final-score">净污染: <strong style="color:${finalScore <= 0 ? '#4CAF50' : '#e53935'}">${finalScore}</strong></div>
+        ${choicesStr ? `<div class="choices-summary">${choicesStr}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCards() {
+  const grid = document.getElementById('cards-grid');
+  const cards = currentRoom?.currentCards || [];
+  const me = allPlayers.find(p => p.socketId === mySocketId);
+  const currentPlayerIndex = turnQueue[currentTurnIndex];
+  const isMyTurn = me && allPlayers[currentPlayerIndex]?.socketId === mySocketId && phaseState === 'selecting' && !me.selectedCard;
+
+  grid.innerHTML = cards.map(card => {
+    const isTaken = card.taken;
+    const isSelected = me?.selectedCard?.id === card.id;
+    let cls = 'game-card';
+    if (isTaken) cls += ' taken';
+    else if (isSelected) cls += ' selected-card';
+    else if (!isMyTurn) cls += ' disabled';
+
+    return `
+      <div class="${cls}" ${!isTaken && isMyTurn ? `onclick="selectCard('${card.id}')"` : ''}
+           ${isTaken ? `data-taken-by="已被 ${card.takenBy} 选走"` : ''}>
+        <div class="card-name">${card.name}</div>
+        <div class="card-desc">${card.desc}</div>
+        <div class="card-tokens">
+          ${card.smoke > 0 ? `<span class="token token-smoke">🌫️ +${card.smoke}</span>` : ''}
+          ${card.leaf > 0 ? `<span class="token token-leaf">🍃 +${card.leaf}</span>` : ''}
+        </div>
+        <div class="card-tip">${card.tip || ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCleanSection() {
+  const section = document.getElementById('clean-section');
+  const me = allPlayers.find(p => p.socketId === mySocketId);
+  
+  if (phaseState !== 'revealing' || !me || me.leaf === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const otherPlayers = allPlayers.filter(p => p.name !== me.name);
+  section.style.display = 'block';
+  document.getElementById('clean-info').textContent = `你有 ${me.leaf} 片绿叶，可以洗 ${Math.min(me.leaf, me.smoke)} 个黑烟，也可以帮朋友！`;
+
+  let html = `
+    <label>用几片绿叶：</label>
+    <input type="number" id="clean-amount" min="1" max="${me.leaf}" value="1" style="width:60px">
+    <label>帮谁：</label>
+    <select id="clean-target">
+      <option value="self">自己</option>
+      ${otherPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+    </select>
+    <button onclick="useLeaf()" ${me.leaf === 0 ? 'disabled' : ''}>🍃 清洗</button>
+  `;
+  document.getElementById('clean-row').innerHTML = html;
+}
+
+function renderActionArea() {
+  const area = document.getElementById('action-area');
+  area.innerHTML = '';
+
+  if (phaseState === 'selecting') {
+    const me = allPlayers.find(p => p.socketId === mySocketId);
+    if (me?.selectedCard) {
+      area.innerHTML = `<p style="color:#666;font-size:0.9rem;">✅ 你选了：<strong>${me.selectedCard.name}</strong>，等待其他人...</p>`;
+    }
+  }
+
+  if (phaseState === 'revealing') {
+    const me = allPlayers.find(p => p.socketId === mySocketId);
+    // 只有当绿叶用完了或者没有绿叶时才显示下一阶段按钮
+    if (!me || me.leaf === 0) {
+      const isLastPlayer = currentTurnIndex >= allPlayers.length;
+      area.innerHTML = `<button class="btn btn-primary" onclick="nextPhase()">➡️ 进入下一阶段</button>`;
+    }
+  }
+}
+
+// ============ 游戏操作 ============
+function selectCard(cardId) {
+  socket.emit('selectCard', cardId, (res) => {
+    if (!res.success) showToast(res.error || '选卡失败');
+  });
+}
+
+function useLeaf() {
+  const amount = parseInt(document.getElementById('clean-amount').value);
+  const target = document.getElementById('clean-target').value;
+  socket.emit('useLeaf', target, amount, (res) => {
+    if (!res.success) showToast(res.error || '清洗失败');
+    else renderActionArea();
+  });
+}
+
+function nextPhase() {
+  socket.emit('nextPhase', (res) => {
+    if (!res.success) showToast(res.error || '无法进入下一阶段');
+  });
+}
+
+// ============ 结果页 ============
+function showResult(result) {
+  const section = document.getElementById('result-section');
+  const verdicts = {
+    perfect: { emoji: '🏆', text: '完美拯救！', cls: 'verdict-perfect' },
+    success: { emoji: '✅', text: '成功拯救！', cls: 'verdict-success' },
+    fail: { emoji: '😢', text: '拯救失败', cls: 'verdict-fail' },
+  };
+  const v = verdicts[result.verdict];
+
+  section.style.display = 'block';
+  section.innerHTML = `
+    <div class="card result-card">
+      <div class="result-emoji">${v.emoji}</div>
+      <h2>${v.text}</h2>
+      <div class="total-smoke">总污染：${result.totalSmoke}</div>
+      <span class="verdict ${v.cls}">${result.verdictKey}</span>
+    </div>
+    <div class="card">
+      <div class="card-title">🏅 个人排名</div>
+      <ul class="ranking-list">
+        ${result.players.map((p, i) => `
+          <li>
+            <span class="rank">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1)}</span>
+            <span class="piece">${getPieceEmoji(p.piece?.id)}</span>
+            <span class="name">${p.name}</span>
+            <span class="score ${p.finalSmoke <= 3 ? 'green' : p.finalSmoke <= 6 ? '' : 'red'}">${p.finalSmoke}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+    <div class="card" style="text-align:center">
+      <button class="btn btn-primary" onclick="playAgain()">🔄 再玩一局</button>
+    </div>
+  `;
+
+  // 显示讨论区
+  const disc = document.getElementById('discussion-section');
+  disc.style.display = 'block';
+  document.getElementById('discussion-list').innerHTML = `
+    <li>你选了哪些卡？哪个阶段污染最多？</li>
+    <li>怎么才能把总污染降到 20 以下？</li>
+    <li>你在生活中怎么做到低碳环保？</li>
+    <li>我承诺：以后要做的低碳小事是 ___</li>
+  `;
+
+  // 隐藏游戏区
+  document.getElementById('cards-section').style.display = 'none';
+  document.getElementById('turn-banner').style.display = 'none';
+  document.getElementById('clean-section').style.display = 'none';
+}
+
+// ============ 房间操作 ============
+function createRoom() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { showToast('请输入名字'); return; }
+
+  connectSocket();
+  socket.emit('createRoom', name, (res) => {
+    if (!res.success) { showToast('创建失败'); return; }
+    isHost = true;
+    roomId = res.roomId;
+    availablePieces = res.pieces;
+    showJoinPhase(res.room);
+    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true));
+  });
+}
+
+function joinRoom() {
+  const roomid = document.getElementById('join-roomid').value.trim();
+  const name = document.getElementById('join-name').value.trim();
+  if (!roomid) { showToast('请输入房间号'); return; }
+  if (!name) { showToast('请输入名字'); return; }
+
+  connectSocket();
+  socket.emit('joinRoom', roomid, name, (res) => {
+    if (!res.success) {
+      showToast(res.error || '加入失败');
+      return;
+    }
+    isHost = false;
+    roomId = res.roomId;
+    availablePieces = res.pieces;
+    showJoinPhase(res.room);
+    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true));
+  });
+}
+
+function showJoinPhase(room) {
+  showPage('game');
+  initClouds();
+  updateRoom(room);
+}
+
+function buildPieceSelector(pieces, canSelect) {
+  return `
+    <div class="piece-grid" id="piece-grid">
+      ${pieces.map(p => `
+        <div class="piece-item ${canSelect ? '' : 'taken'}" 
+             ${canSelect ? `onclick="confirmPiece('${p.id}')"` : ''}>
+          <div class="emoji">${getPieceEmoji(p.id)}</div>
+          <div class="name">${p.name}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function confirmPiece(pieceId) {
+  socket.emit('selectPiece', pieceId, (res) => {
+    if (res.success) {
+      availablePieces = res.pieces;
+      updateRoom(res.room);
+      closeModal();
+      renderLobbyRoom();
+    } else {
+      showToast(res.error || '选择失败');
+    }
+  });
+}
+
+function renderLobbyRoom() {
+  if (!currentRoom) return;
+  
+  // 渲染玩家列表
+  const list = document.getElementById('players-panel');
+  list.innerHTML = currentRoom.players.map(p => `
+    <div class="player-badge ${p.socketId === currentRoom.host ? 'host' : ''}" 
+         style="border-color:${p.piece?.color || '#ccc'}">
+      <span class="emoji">${getPieceEmoji(p.piece?.id)}</span>
+      <span>${p.name}</span>
+    </div>
+  `).join('');
+
+  // 操作按钮
+  const area = document.getElementById('action-area');
+  if (isHost && currentRoom.players.length >= 2) {
+    area.innerHTML = `<button class="btn btn-primary" onclick="startGame()">🎮 开始游戏</button>`;
+  } else if (isHost) {
+    area.innerHTML = `<p style="color:#888;font-size:0.85rem;">⏳ 等待至少2个玩家加入...</p>`;
+  } else {
+    area.innerHTML = `<p style="color:#888;font-size:0.85rem;">⏳ 等待房主开始游戏...</p>`;
+  }
+
+  // 隐藏游戏区元素
+  document.getElementById('cards-section').style.display = 'none';
+  document.getElementById('event-banner').style.display = 'none';
+  document.getElementById('discussion-section').style.display = 'none';
+}
+
+function startGame() {
+  socket.emit('startGame', (res) => {
+    if (!res.success) showToast(res.error || '无法开始');
+  });
+}
+
+function leaveGame() {
+  socket.emit('leaveRoom');
+  location.reload();
+}
+
+function playAgain() {
+  socket.emit('leaveRoom');
+  location.reload();
+}
+
+function copyRoomId() {
+  navigator.clipboard.writeText(roomId).then(() => showToast('房间号已复制！'));
+}
+
+// ============ 模态框 ============
+function showModal(title, text, actionsHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').innerHTML = text;
+  document.getElementById('modal-actions').innerHTML = actionsHtml;
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+}
+
+// ============ 工具函数 ============
+function getPieceEmoji(id) {
+  const map = { tshirt: '👕', apple: '🍎', car: '🚗', phone: '📱' };
+  return map[id] || '❓';
+}
+
+function showToast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const div = document.createElement('div');
+  div.className = 'toast';
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+function initClouds() {
+  const clouds = document.getElementById('clouds');
+  if (clouds.children.length > 0) return;
+  for (let i = 0; i < 5; i++) {
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    c.style.width = (60 + Math.random() * 80) + 'px';
+    c.style.height = c.style.width;
+    c.style.top = (10 + Math.random() * 120) + 'px';
+    c.style.animationDuration = (20 + Math.random() * 30) + 's';
+    c.style.animationDelay = (-Math.random() * 30) + 's';
+    clouds.appendChild(c);
+  }
+}
+
+// ============ 初始化 ============
+// 自动连接
+connectSocket();
+
+// 拦截 Socket 事件来更新 UI
+const originalOn = socket.on.bind(socket);
+socket.on = function(event, cb) {
+  if (['roomUpdated', 'phaseStarted', 'cardSelected', 'allSelected', 'leafUsed', 'playerJoined', 'playerLeft'].includes(event)) {
+    return originalOn(event, (data) => {
+      if (event === 'roomUpdated' || event === 'phaseStarted' || event === 'cardSelected' || 
+          event === 'allSelected' || event === 'leafUsed' || event === 'playerJoined' || event === 'playerLeft') {
+        if (data.room) {
+          updateRoom(data.room);
+          renderGameUI();
+        } else if (data.room !== undefined && typeof data.room === 'object' && data.room === null) {
+          // some events have room directly
+        } else {
+          // For events like playerLeft that have room property
+          updateRoom(data.room || currentRoom);
+          renderGameUI();
+        }
+      }
+      cb(data);
+    });
+  }
+  return originalOn(event, cb);
+};
+
+// 修正事件处理
+socket.off = originalOn;
+</script>
+</body>
+</html>
