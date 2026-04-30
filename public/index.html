@@ -1273,18 +1273,21 @@ function showJoinPhase(room) {
   updateRoom(room);
 }
 
-function buildPieceSelector(pieces, canSelect) {
-  return `
-    <div class="piece-grid" id="piece-grid">
-      ${pieces.map(p => `
-        <div class="piece-item ${canSelect ? '' : 'taken'}" 
-             ${canSelect ? `onclick="confirmPiece('${p.id}')"` : ''}>
-          <div class="emoji">${getPieceEmoji(p.id)}</div>
-          <div class="name">${p.name}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
+function buildPieceSelector(pieces, canSelect, usedPieces) {
+ const used = usedPieces || [];
+ return `
+ <div class="piece-grid" id="piece-grid">
+ ${pieces.map(p => {
+ const isTaken = used.includes(p.id);
+ return `
+ <div class="piece-item ${isTaken ? 'taken' : ''}" 
+ ${!isTaken && canSelect ? `onclick="confirmPiece('${p.id}')"` : ''}>
+ <div class="emoji">${getPieceEmoji(p.id)}</div>
+ <div class="name">${p.name}</div>
+ </div>`;
+ }).join('')}
+ </div>
+ `;
 }
 
 function confirmPiece(pieceId) {
