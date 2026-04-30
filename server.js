@@ -113,6 +113,7 @@ function getRoomState(room) {
     eventCard: room.eventCard,
     currentCards: room.currentCards,
     extraCard: room.extraCard,
+    host: room.host,
   };
 }
 
