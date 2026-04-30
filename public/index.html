@@ -920,18 +920,23 @@ function connectSocket() {
   });
 
   socket.on('playerJoined', (room) => {
-    updateRoom(room);
-    showToast(`欢迎 ${room.players[room.players.length-1]?.name} 加入！`);
-  });
+ updateRoom(room);
+ showToast(`欢迎 ${room.players[room.players.length-1]?.name} 加入！`);
+ if (room.phaseState === 'waiting') renderLobbyRoom();
+ });
 
   socket.on('playerLeft', (data) => {
-    updateRoom(data.room);
-    showToast('一个玩家离开了');
-  });
+ updateRoom(data.room);
+ showToast('一个玩家离开了');
+ if (data.room?.phaseState === 'waiting') renderLobbyRoom();
+ });
 
   socket.on('roomUpdated', (room) => {
-    updateRoom(room);
-  });
+ updateRoom(room);
+ if (room.phaseState === 'waiting') {
+ renderLobbyRoom();
+ }
+ });
 
   socket.on('gameStarted', (room) => {
     showGamePage();
@@ -1414,32 +1419,6 @@ connectSocket();
 // 检查URL中的房间参数（支持邀请链接直接加入）
 checkUrlParams();
 
-// 拦截 Socket 事件来更新 UI
-const originalOn = socket.on.bind(socket);
-socket.on = function(event, cb) {
-  if (['roomUpdated', 'phaseStarted', 'cardSelected', 'allSelected', 'leafUsed', 'playerJoined', 'playerLeft'].includes(event)) {
-    return originalOn(event, (data) => {
-      if (event === 'roomUpdated' || event === 'phaseStarted' || event === 'cardSelected' || 
-          event === 'allSelected' || event === 'leafUsed' || event === 'playerJoined' || event === 'playerLeft') {
-        if (data.room) {
-          updateRoom(data.room);
-          renderGameUI();
-        } else if (data.room !== undefined && typeof data.room === 'object' && data.room === null) {
-          // some events have room directly
-        } else {
-          // For events like playerLeft that have room property
-          updateRoom(data.room || currentRoom);
-          renderGameUI();
-        }
-      }
-      cb(data);
-    });
-  }
-  return originalOn(event, cb);
-};
-
-// 修正事件处理
-socket.off = originalOn;
 </script>
 </body>
 </html>
