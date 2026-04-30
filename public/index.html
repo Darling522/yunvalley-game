@@ -1303,7 +1303,10 @@ function confirmPiece(pieceId) {
 function renderLobbyRoom() {
   if (!currentRoom) return;
   
-  // 渲染玩家列表
+  // 自动判断是否房主（每次渲染都刷新）
+ isHost = (mySocketId === currentRoom.host);
+
+  // 更新玩家列表
   const list = document.getElementById('players-panel');
   list.innerHTML = currentRoom.players.map(p => `
     <div class="player-badge ${p.socketId === currentRoom.host ? 'host' : ''}" 
