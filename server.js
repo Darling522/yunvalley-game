@@ -100,6 +100,7 @@ function getRoomState(room) {
     phaseName: PHASES[room.phase],
     phaseState: room.phaseState,
     turnIndex: room.turnIndex,
+    host:room.host,
     players: room.players.map(p => ({
       socketId: p.socketId,
       name: p.name,
