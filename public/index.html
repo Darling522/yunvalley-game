@@ -1243,7 +1243,7 @@ function createRoom() {
     shortCode = res.shortCode || '';
     availablePieces = res.pieces;
     showJoinPhase(res.room);
-    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true));
+    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true,res.usedPieces || []));
   });
 }
 
@@ -1263,7 +1263,7 @@ function joinRoom() {
     roomId = res.roomId;
     availablePieces = res.pieces;
     showJoinPhase(res.room);
-    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true));
+    showModal('选择你的角色', '选一个你喜欢的小棋子！', buildPieceSelector(res.pieces, true,res.usedPieces || []));
   });
 }
 
