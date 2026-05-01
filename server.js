@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
     currentRoom = roomId;
     socket.join(roomId);
 
-    callback({ success: true, room: getRoomState(room), pieces: availablePieces });
+    callback({ success: true, room: getRoomState(room), pieces: PIECES, usedPieces: room.usedPieces || [], availablePieces: availablePieces });
     io.to(roomId).emit('playerJoined', getRoomState(room));
   });
 
